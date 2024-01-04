@@ -1,1 +1,1 @@
-# Historical-DBTvault
+# dbtvault-historical-pit
