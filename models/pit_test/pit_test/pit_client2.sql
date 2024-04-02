@@ -10,8 +10,6 @@ satellites:
       LDTS: EFFECTIVE_FROM
     columns:
       - addr
-    database_name:
-      DB: ndb
   s_name:
     pk:
       PK: hsh_ky_cli_cd
@@ -19,8 +17,6 @@ satellites:
       LDTS: EFFECTIVE_FROM
     columns:
       - name
-    database_name:
-      DB: ndb
 stage_tables:
   v_stg_s_address: EFFECTIVE_FROM
   v_stg_s_name: EFFECTIVE_FROM
