@@ -1,0 +1,124 @@
+dbt_emr_yarn:
+  outputs:
+    dev:
+      host: ec2-3-110-145-179.ap-south-1.compute.amazonaws.com
+      method: thrift
+      port: 10001
+      schema: test_poc
+      threads: 8
+      type: spark
+  target: dev
+dbt_iceberg:
+  outputs:
+    dev:
+      host: ec2-3-110-89-45.ap-south-1.compute.amazonaws.com
+      method: thrift
+      port: 10001
+      schema: dbt_delta
+      threads: 1
+      type: spark
+  target: dev
+dbt_tbl:
+  outputs:
+    dev:
+      host: ec2-3-110-199-167.ap-south-1.compute.amazonaws.com
+      method: thrift
+      port: 10001
+      schema: test_poc
+      threads: 2
+      type: spark
+  target: dev
+dbt_vault:
+  outputs:
+    dev:
+      host: ec2-65-2-136-105.ap-south-1.compute.amazonaws.com
+      method: thrift
+      port: 10001
+      schema: test_poc
+      threads: 8
+      type: spark
+  target: dev
+dbtvault_snowflake_demo:
+  outputs:
+    dev:
+      account: gk81174.ap-southeast-1
+      client_session_keep_alive: false
+      database: DV_PROTOTYPE_DB
+      password: Fordbtvault@0107
+      role: ACCOUNTADMIN
+      schema: DEMO
+      threads: 4
+      type: snowflake
+      user: TANMAYSNOWMAN
+      warehouse: DV_PROTOTYPE_WH
+  target: dev
+etli_dbt_ontology:
+  outputs:
+    dev:
+      host: localhost
+      method: thrift
+      port: 10001
+      schema: test_poc
+      threads: 3
+      type: spark
+  target: dev
+p_demo:
+  outputs:
+    dev:
+      dbname: postgres
+      host: localhost
+      pass: '1234'
+      port: 5432
+      schema: postgres
+      threads: 1
+      type: postgres
+      user: postgres
+    prod:
+      dbname:
+      - dbname
+      host:
+      - host
+      pass:
+      - prod_password
+      port:
+      - port
+      schema:
+      - prod_schema
+      threads:
+      - 1 or more
+      type: postgres
+      user:
+      - prod_username
+  target: dev
+poc_demo:
+  outputs:
+    dev:
+      host: localhost
+      method: thrift
+      port: 10000
+      schema: ndb
+      threads: 1
+      type: spark
+  target: dev
+temp:
+  outputs:
+    dev:
+      dbname: tanmaydb
+      host: localhost
+      password: '1234'
+      port: 10001
+      schema: tanmaydb
+      threads: 2
+      type: redshift
+      user: tanmay
+  target: dev
+poc_demo2:
+  outputs:
+    dev:
+      host: localhost
+      method: thrift
+      port: 10000
+      schema: kdb
+      threads: 1
+      type: spark
+  target: dev
