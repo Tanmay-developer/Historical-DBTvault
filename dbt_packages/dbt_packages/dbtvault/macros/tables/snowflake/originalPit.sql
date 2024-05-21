@@ -21,21 +21,21 @@
 
 {{ dbtvault.prepend_generated_by() }}
 
-{%- if (as_of_dates_table is none) and execute -%}
-    {%- set error_message -%}
-    "PIT error: Missing as_of_dates table configuration. A as_of_dates_table must be provided."
-    {%- endset -%}
-    {{- exceptions.raise_compiler_error(error_message) -}}
-{%- endif -%}
+-- {%- if (as_of_dates_table is none) and execute -%}
+--     {%- set error_message -%}
+--     "PIT error: Missing as_of_dates table configuration. A as_of_dates_table must be provided."
+--     {%- endset -%}
+--     {{- exceptions.raise_compiler_error(error_message) -}}
+-- {%- endif -%}
 
-{#- Acquiring the source relation for the AS_OF table -#}
-{%- if as_of_dates_table is mapping and as_of_dates_table is not none -%}
-    {%- set source_name = as_of_dates_table | first -%}
-    {%- set source_table_name = as_of_dates_table[source_name] -%}
-    {%- set as_of_table_relation = source(source_name, source_table_name) -%}
-{%- elif as_of_dates_table is not mapping and as_of_dates_table is not none -%}
-    {%- set as_of_table_relation = ref(as_of_dates_table) -%}
-{%- endif -%}
+-- {#- Acquiring the source relation for the AS_OF table -#}
+-- {%- if as_of_dates_table is mapping and as_of_dates_table is not none -%}
+--     {%- set source_name = as_of_dates_table | first -%}
+--     {%- set source_table_name = as_of_dates_table[source_name] -%}
+--     {%- set as_of_table_relation = source(source_name, source_table_name) -%}
+-- {%- elif as_of_dates_table is not mapping and as_of_dates_table is not none -%}
+--     {%- set as_of_table_relation = ref(as_of_dates_table) -%}
+-- {%- endif -%}
 
 {#- Setting ghost values to replace NULLS -#}
 {%- set ghost_pk = '0000000000000000' -%}
@@ -53,8 +53,25 @@
 {%- set new_as_of_dates_cte = 'as_of_dates' -%}
 {%- endif %}
 
-WITH as_of_dates AS (
-    SELECT * FROM {{ as_of_table_relation }}
+-- WITH as_of_date AS (
+--     select hsh_ky_customer_cd, EFFECTIVE_FROM from {{ref('v_stg_s_address')}}
+--     union
+--     select hsh_ky_customer_cd, EFFECTIVE_FROM from {{ref('v_stg_s_name')}}
+-- )
+
+WITH as_of_date AS (
+  {% for satellite, attributes in satellites.items() %}
+    {% set pk = attributes['pk']['PK'] %}
+    {% set ldts = attributes['ldts']['LDTS'] %}
+    select {{ pk }}, {{ ldts }} from {{ ref('v_stg_' + satellite) }}
+    {% if not loop.last %}
+    union
+    {% endif %}
+  {% endfor %}
+),
+
+as_of_dates AS (
+    SELECT distinct hsh_ky_customer_cd as {{ src_pk}}, EFFECTIVE_FROM as AS_OF_DATE FROM as_of_date
 ),
 
 {%- if dbtvault.is_any_incremental() %}
@@ -182,17 +199,21 @@ new_rows AS (
     SELECT
         {{ dbtvault.prefix([src_pk], 'a') }},
         a.AS_OF_DATE,
+
     {%- for sat_name in satellites -%}
         {%- set sat_pk_name = (satellites[sat_name]['pk'].keys() | list )[0] -%}
         {%- set sat_ldts_name = (satellites[sat_name]['ldts'].keys() | list )[0] -%}
         {%- set sat_pk = dbtvault.escape_column_names(satellites[sat_name]['pk'][sat_pk_name]) -%}
         {%- set sat_ldts = dbtvault.escape_column_names(satellites[sat_name]['ldts'][sat_ldts_name]) %}
         {%- if target.type == "sqlserver" -%}
-        COALESCE(MAX({{ dbtvault.escape_column_names( sat_name | lower ~ '_src' ) }}.{{ sat_pk }}), CONVERT(BINARY(16), '{{ ghost_pk }}', 2)) AS {{ dbtvault.escape_column_names( sat_name | upper ~ '_' ~ sat_pk_name | upper ) }},
+            COALESCE(MAX({{ dbtvault.escape_column_names( sat_name | lower ~ '_src' ) }}.{{ sat_pk }}), 
+            CONVERT(BINARY(16), '{{ ghost_pk }}', 2)) AS {{ dbtvault.escape_column_names( sat_name | upper ~ '_' ~ sat_pk_name | upper ) }},
         {%- else -%}
-        COALESCE(MAX({{ dbtvault.escape_column_names( sat_name | lower ~ '_src' ) }}.{{ sat_pk }}), CAST('{{ ghost_pk }}' AS STRING)) AS {{ dbtvault.escape_column_names( sat_name | upper ~ '_' ~ sat_pk_name | upper ) }},
+            COALESCE(MAX({{ dbtvault.escape_column_names( sat_name | lower ~ '_src' ) }}.{{ sat_pk }}), 
+            CAST('{{ ghost_pk }}' AS STRING)) AS {{ dbtvault.escape_column_names( sat_name | upper ~ '_' ~ sat_pk_name | upper ) }},
         {%- endif -%}
-        COALESCE(MAX({{ dbtvault.escape_column_names( sat_name | lower ~ '_src' ) }}.{{ sat_ldts }}), CAST('{{ ghost_date }}' AS {{ dbtvault.type_timestamp() }})) AS {{ dbtvault.escape_column_names( sat_name | upper ~ '_' ~ sat_ldts_name | upper ) }}
+        COALESCE(MAX({{ dbtvault.escape_column_names( sat_name | lower ~ '_src' ) }}.{{ sat_ldts }}), 
+        CAST('{{ ghost_date }}' AS {{ dbtvault.type_timestamp() }})) AS {{ dbtvault.escape_column_names( sat_name | upper ~ '_' ~ sat_ldts_name | upper ) }}
         {{- "," if not loop.last }}
     {%- endfor %}
     FROM new_rows_as_of_dates AS a
