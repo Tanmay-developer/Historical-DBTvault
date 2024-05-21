@@ -38,7 +38,12 @@ WITH as_of_date AS (
     {% set pk = attributes['pk']['PK'] %}
     {% set ldts = attributes['ldts']['LDTS'] %}
     {%- set sat_db = attributes['db']['DB'] -%}
+    {%- set sat_type = attributes['table_type']['TABLE_TYPE'] -%}
+    {%- if sat_type == "driver" -%}
     select {{ pk }} as {{ src_pk}}, {{ ldts }} as EFFECTIVE_FROM from {{ source(sat_db, satellite) }}
+    {%- else -%}
+    select {{ pk }} as {{ src_pk}}, max({{ ldts }}) as EFFECTIVE_FROM from {{ source(sat_db, satellite) }} group by {{ pk }}
+    {%- endif -%}
     {% if not loop.last %}
     union
     {% endif %}
