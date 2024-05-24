@@ -20,9 +20,15 @@ WITH as_of_date AS (
     {%- set sat_db = attributes['db']['DB'] -%}
     {%- set sat_type = attributes['table_type']['TABLE_TYPE'] -%}
     {%- if sat_type == "driver" -%}
-    select {{ pk }} as {{ src_pk}}, {{ ldts }} as EFFECTIVE_FROM from {{ source(sat_db, satellite) }}
-    {%- else -%}
-    select {{ pk }} as {{ src_pk}}, max({{ ldts }}) as EFFECTIVE_FROM from {{ source(sat_db, satellite) }} group by {{ pk }}
+        select {{ pk }} as {{ src_pk}}, {{ ldts }} as EFFECTIVE_FROM from {{ source(sat_db, satellite) }}
+        {% if is_incremental() %}
+          where {{ ldts }} > (select max({{ ldts }}) from {{ source(sat_db, satellite) }})
+        {%- endif -%}
+        {%- else -%}
+        select {{ pk }} as {{ src_pk}}, max({{ ldts }}) as EFFECTIVE_FROM from {{ source(sat_db, satellite) }} group by {{ pk }}
+        {% if is_incremental() %}
+          where {{ ldts }} > (select max({{ ldts }}) from {{ source(sat_db, satellite) }})
+        {% endif %}
     {%- endif -%}
     {% if not loop.last %}
     union

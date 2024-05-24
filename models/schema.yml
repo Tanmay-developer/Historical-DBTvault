@@ -1,0 +1,6 @@
+sources:
+  - name: kdb
+    schema: kdb
+    tables:
+      - name: customer_addr
+      - name: customer_phn
